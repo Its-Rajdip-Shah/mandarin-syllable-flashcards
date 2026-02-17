@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mandarin Tone Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Newsreader:wght@500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: linear-gradient(135deg, #0f172a 0%, #111827 40%, #0f766e 100%);
+      --card: rgba(255, 255, 255, 0.06);
+      --card-strong: rgba(255, 255, 255, 0.12);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22d3ee;
+      --danger: #f87171;
+      --success: #34d399;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 18px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 0.02em;
+      font-family: 'Newsreader', 'Space Grotesk', serif;
+    }
+    #modeSelect button {
+      margin-right: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 120ms ease;
+    }
+    #modeSelect button.active {
+      background: var(--accent);
+      color: #0b1224;
+      font-weight: 600;
+    }
+    main {
+      flex: 1;
+      padding: 0 22px 26px;
+      display: grid;
+      grid-template-columns: minmax(0, 2.2fr) minmax(220px, 0.8fr);
+      gap: 18px;
+      align-items: start;
+    }
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .panel h2 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+    .option-btn, .audio-card, .text-card {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      cursor: pointer;
+      transition: all 120ms ease;
+    }
+    .option-btn.correct { background: rgba(52, 211, 153, 0.2); border-color: var(--success); }
+    .option-btn.wrong { background: rgba(248, 113, 113, 0.18); border-color: var(--danger); }
+    .option-btn.selected { border-color: var(--accent); }
+    .audio-card:hover, .text-card:hover { transform: translateY(-2px); }
+    .pair-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .match-container { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .vibrate { animation: vibrate 120ms linear 0s 2; }
+    @keyframes vibrate { 0% { transform: translateX(-2px);} 50% {transform: translateX(2px);} 100% {transform: translateX(0);} }
+    .controls { display: flex; gap: 10px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+    .slider { width: 120px; }
+    .tone-choices { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip {
+      padding: 8px 11px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.07);
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .chip.selected { border-color: var(--accent); background: rgba(34, 211, 238, 0.15); color: #0b1224; }
+    table.pinyin { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    table.pinyin th, table.pinyin td {
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 8px;
+      text-align: center;
+      min-width: 46px;
+    }
+    table.pinyin th {
+      background: rgba(255,255,255,0.08);
+      font-weight: 600;
+      color: var(--muted);
+    }
+    table.pinyin td button {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      padding: 6px 4px;
+      cursor: pointer;
+    }
+    table.pinyin td button.selected { color: var(--accent); font-weight: 700; }
+    .table-wrap { max-width: 100%; overflow-x: auto; padding-bottom: 6px; }
+    footer { padding: 14px 22px; color: var(--muted); font-size: 13px; }
+    .small { color: var(--muted); font-size: 12px; }
+    .hidden { display: none; }
+    .tag { font-size: 11px; color: var(--muted); margin-left: 4px; }
+    .action-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+    .answer-card {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: var(--card-strong);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    #confettiLayer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 999;
+    }
+    .confetti-piece {
+      position: absolute;
+      width: 8px;
+      height: 14px;
+      opacity: 0;
+      transform: translateY(-10vh) rotate(0deg);
+      animation: confetti-fall 1.2s ease-out forwards;
+    }
+    @keyframes confetti-fall {
+      0% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="confettiLayer"></div>
+  <header>
+    <div>
+      <h1>Mandarin Tone Lab</h1>
+      <div class="small">Active recall drills powered by Tone Perfect</div>
+    </div>
+    <div id="modeSelect">
+      <button data-mode="hear_pick" class="active">Hear → Pick</button>
+      <button data-mode="match_pairs">Match</button>
+      <button data-mode="tone_discrimination">Tone ID</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel" id="promptPanel">
+      <h2 id="promptTitle">Loading…</h2>
+      <div id="promptBody"></div>
+    </section>
+    <section class="panel">
+      <h2>Playback</h2>
+      <div class="controls">
+        <button id="playBtn" class="option-btn" disabled>Play</button>
+        <label class="small">Speed <input id="speed" class="slider" type="range" min="0.6" max="1.1" step="0.05" value="1"></label>
+        <span id="attemptsCount" class="small"></span>
+        <span id="timer" class="small"></span>
+        <span id="status" class="small"></span>
+      </div>
+      <div id="questionStats" class="small"></div>
+      <div id="resultCard"></div>
+    </section>
+  </main>
+
+  <footer>
+    Attempts and response times are tracked locally for now (storage: localStorage).
+  </footer>
+
+  <audio id="audio"></audio>
+
+  <script>
+    const BANK_FILES = {
+      hear_pick: 'Qbank/type1.json',
+      match_pairs: 'Qbank/type2.json',
+      tone_discrimination: 'Qbank/type3.json'
+    };
+    const MODES = ['hear_pick', 'match_pairs', 'tone_discrimination'];
+    const promptTitle = document.getElementById('promptTitle');
+    const promptBody = document.getElementById('promptBody');
+    const playBtn = document.getElementById('playBtn');
+    const speed = document.getElementById('speed');
+    const audioEl = document.getElementById('audio');
+    const statusEl = document.getElementById('status');
+    const attemptsEl = document.getElementById('attemptsCount');
+    const timerEl = document.getElementById('timer');
+    const statsEl = document.getElementById('questionStats');
+    const resultEl = document.getElementById('resultCard');
+    let bank = [];
+    let current = null;
+    let startedAt = null;
+    let attempts = 0;
+    const MAX_TIME_MS = 100000; // 100 seconds
+    const MAX_ATTEMPTS = 5;
+    let mode = MODES[0];
+    let history = loadHistory();
+    let timerHandle = null;
+    let questionEnded = false;
+    let nextBtnRef = null;
+
+    function loadHistory() {
+      try {
+        return JSON.parse(localStorage.getItem('toneLabHistory') || '[]');
+      } catch {
+        return [];
+      }
+    }
+    function saveHistory() {
+      localStorage.setItem('toneLabHistory', JSON.stringify(history));
+    }
+    function setStatus(msg) { statusEl.textContent = msg; }
+
+    async function loadBank() {
+      bank = [];
+      for (const [m, path] of Object.entries(BANK_FILES)) {
+        const res = await fetch(path);
+        const lines = (await res.text()).trim().split('\n').filter(Boolean);
+        const items = lines.map(l => ({ ...JSON.parse(l), mode: m }));
+        bank.push(...items);
+      }
+      pickNext();
+    }
+
+    function parseJsonl(text) {
+      return text.split('\n').filter(Boolean).map(line => JSON.parse(line));
+    }
+
+    function pickNext() {
+      let candidates = bank.filter(q => q.mode === mode || q.type === mode);
+
+      // Gate: for hear_pick, force all important items to be seen once before others appear
+      if (mode === 'hear_pick') {
+        const important = candidates.filter(q => q.important);
+        const seenIds = new Set(history.map(h => h.id));
+        const unseenImportant = important.filter(q => !seenIds.has(q.id));
+        if (unseenImportant.length) {
+          candidates = unseenImportant;
+        }
+      }
+
+      if (!candidates.length) {
+        promptTitle.textContent = 'No questions for this mode yet.';
+        promptBody.innerHTML = '';
+        playBtn.disabled = true;
+        return;
+      }
+      const scored = candidates.map(q => {
+        let score = computePriority(q);
+        if (mode === 'hear_pick' && q.important) score *= 4; // weight important higher
+        return { score, q };
+      });
+      scored.sort((a, b) => b.score - a.score);
+      current = scored[0].q;
+      attempts = 0;
+      questionEnded = false;
+      nextBtnRef = null;
+      renderQuestion(current);
+    }
+
+    function playAudio(src) {
+      audioEl.src = src;
+      audioEl.playbackRate = parseFloat(speed.value);
+      audioEl.play();
+    }
+
+    playBtn.addEventListener('click', () => {
+      if (!current) return;
+      const src =
+        current.audio ||
+        (current.cards && current.cards[0]?.audio) ||
+        (current.pairs && current.pairs[0]?.audio) ||
+        '';
+      if (src) playAudio(src);
+    });
+    speed.addEventListener('input', () => {
+      audioEl.playbackRate = parseFloat(speed.value);
+    });
+
+    function recordResult(correct, msOverride) {
+      const ms = msOverride ?? (performance.now() - startedAt);
+      history.push({
+        id: current.id,
+        mode,
+        attempts_to_correct: attempts,
+        time_taken_ms: ms,
+        correct,
+        timestamp: Date.now()
+      });
+      saveHistory();
+      setStatus(`${correct ? '✓ Correct' : '✕ Incorrect'} • ${(ms/1000).toFixed(2)}s • attempts ${attempts}`);
+    }
+
+    function endQuestion(correct, reason) {
+      if (questionEnded) return;
+      questionEnded = true;
+      if (timerHandle) cancelAnimationFrame(timerHandle);
+      recordResult(!!correct);
+      const hasAnswerCard = resultEl.querySelector('.answer-card');
+      if (!hasAnswerCard) showResult(!!correct);
+      if (correct) launchConfetti();
+      if (reason) setStatus(reason);
+      if (nextBtnRef) nextBtnRef.disabled = false;
+    }
+
+    function renderQuestion(q) {
+      promptTitle.textContent = q.prompt || 'Question';
+      promptBody.innerHTML = '';
+      setStatus('');
+      startedAt = performance.now();
+      attempts = 0;
+      updateAttemptsTimer();
+      showResult(null);
+      showStats(q.id);
+      if (mode === 'hear_pick') renderHearPick(q);
+      if (mode === 'match_pairs') renderMatch(q);
+      if (mode === 'tone_discrimination') renderTone(q);
+    }
+
+    // --- Mode 1: hear → pick syllable + tone ---
+    function renderHearPick(q) {
+      playBtn.disabled = false;
+      let chosenSyll = null;
+      let chosenTone = null;
+
+      const toneRow = document.createElement('div');
+      toneRow.className = 'tone-choices';
+      Object.entries(q.options?.tone_symbols || {}).forEach(([tone, symbol]) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = symbol;
+        chip.onclick = () => toggleTone(tone, chip, toneRow);
+        toneRow.appendChild(chip);
+      });
+
+      const syllTable = buildPinyinTable(q.options?.syllable_pool || [], selectSyllable);
+      const wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      wrap.appendChild(syllTable);
+
+      const actions = document.createElement('div');
+      actions.className = 'action-row';
+
+      const checkBtn = document.createElement('button');
+      checkBtn.className = 'option-btn';
+      checkBtn.textContent = 'Check';
+      checkBtn.onclick = () => {
+        if (questionEnded) return;
+        if (!chosenSyll || !chosenTone) {
+          setStatus('Select one syllable and one tone first.');
+          return;
+        }
+        attempts += 1;
+        const correct = chosenSyll === q.answer.syllable && chosenTone === q.answer.tone;
+        if (correct) {
+          endQuestion(true);
+        } else {
+          showResult(false);
+          setStatus('Try again.');
+          if (attempts >= MAX_ATTEMPTS) endQuestion(false, 'Attempt limit (5) reached.');
+        }
+        updateAttemptsTimer();
+      };
+
+      const yieldBtn = document.createElement('button');
+      yieldBtn.className = 'option-btn';
+      yieldBtn.textContent = 'Yield';
+      yieldBtn.onclick = () => {
+        if (questionEnded) return;
+        showAnswerCard(q);
+        endQuestion(false, 'Yielded and revealed answer.');
+      };
+
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'option-btn';
+      nextBtn.textContent = 'Next';
+      nextBtn.disabled = true;
+      nextBtn.onclick = () => pickNext();
+      nextBtnRef = nextBtn;
+
+      actions.append(checkBtn, yieldBtn, nextBtn);
+
+      promptBody.appendChild(actions);
+      promptBody.appendChild(limitNote());
+      promptBody.appendChild(toneRow);
+      promptBody.appendChild(wrap);
+
+      function toggleTone(tone, chip, row) {
+        if (chosenTone === tone) {
+          chosenTone = null;
+          chip.classList.remove('selected');
+          return;
+        }
+        chosenTone = tone;
+        [...row.children].forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+      }
+
+      function selectSyllable(sym, button) {
+        if (chosenSyll === sym) {
+          chosenSyll = null;
+          button.classList.remove('selected');
+          return;
+        }
+        chosenSyll = sym;
+        document.querySelectorAll('table.pinyin td button').forEach(b => b.classList.remove('selected'));
+        button.classList.add('selected');
+      }
+    }
+
+    // --- Mode 2: match pairs ---
+    function renderMatch(q) {
+      playBtn.disabled = true; // individual cards handle playback
+
+      // Track IDs only so selections stay stable even if objects are reused
+      let selectedAudioId = null;
+      let selectedTextId = null;
+      const remaining = new Set(q.pairs.map(p => p.id));
+
+      const wrap = document.createElement('div');
+      wrap.className = 'match-container';
+
+      const left = document.createElement('div');
+      const right = document.createElement('div');
+      const audioNodes = {};
+      const textNodes = {};
+
+      const shuffle = (arr) => {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      };
+
+      const refreshSelection = () => {
+        Object.values(audioNodes).forEach(node => node.style.borderColor = 'rgba(255,255,255,0.08)');
+        Object.values(textNodes).forEach(node => node.style.borderColor = 'rgba(255,255,255,0.08)');
+        if (selectedAudioId && audioNodes[selectedAudioId]) audioNodes[selectedAudioId].style.borderColor = 'var(--accent)';
+        if (selectedTextId && textNodes[selectedTextId]) textNodes[selectedTextId].style.borderColor = 'var(--accent)';
+      };
+
+      const shake = (node) => {
+        if (!node) return;
+        node.classList.add('vibrate');
+        node.style.borderColor = 'var(--danger)';
+        setTimeout(() => {
+          node.classList.remove('vibrate');
+          if (!node.classList.contains('hidden')) {
+            node.style.borderColor = 'rgba(255,255,255,0.08)';
+          }
+        }, 160);
+      };
+
+      const removePair = (id) => {
+        if (audioNodes[id]) audioNodes[id].classList.add('hidden');
+        if (textNodes[id]) textNodes[id].classList.add('hidden');
+      };
+
+      const checkPairIfReady = () => {
+        if (!selectedAudioId || !selectedTextId) return;
+        attempts += 1;
+        const correct = selectedAudioId === selectedTextId;
+        if (correct) {
+          removePair(selectedAudioId);
+          remaining.delete(selectedAudioId);
+          showResult(true);
+          if (remaining.size === 0) endQuestion(true);
+        } else {
+          showResult(false);
+          shake(audioNodes[selectedAudioId]);
+          shake(textNodes[selectedTextId]);
+          if (attempts >= MAX_ATTEMPTS) endQuestion(false, 'Attempt limit (5) reached.');
+        }
+        selectedAudioId = null;
+        selectedTextId = null;
+        refreshSelection();
+        updateAttemptsTimer();
+      };
+
+      q.pairs.forEach((pair, idx) => {
+        const a = document.createElement('div');
+        a.className = 'audio-card';
+        a.textContent = `🔊 Audio ${idx + 1}`;
+        a.onclick = () => {
+          if (questionEnded || !remaining.has(pair.id)) return;
+          playAudio(pair.audio);
+          selectedAudioId = pair.id;
+          refreshSelection();
+          checkPairIfReady();
+        };
+        left.appendChild(a);
+        audioNodes[pair.id] = a;
+      });
+
+      shuffle(q.pairs).forEach(pair => {
+        const t = document.createElement('div');
+        t.className = 'text-card';
+        t.textContent = pair.label;
+        t.onclick = () => {
+          if (questionEnded || !remaining.has(pair.id)) return;
+          selectedTextId = pair.id;
+          refreshSelection();
+          checkPairIfReady();
+        };
+        right.appendChild(t);
+        textNodes[pair.id] = t;
+      });
+
+      wrap.append(left, right);
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'option-btn';
+      nextBtn.textContent = 'Next';
+      nextBtn.disabled = true;
+      nextBtn.onclick = () => pickNext();
+      nextBtnRef = nextBtn;
+
+      const actionWrap = document.createElement('div');
+      actionWrap.className = 'action-row';
+      actionWrap.appendChild(nextBtn);
+
+      promptBody.appendChild(limitNote());
+      promptBody.appendChild(wrap);
+      promptBody.appendChild(actionWrap);
+    }
+
+    // --- Mode 3: tone discrimination ---
+    function renderTone(q) {
+      playBtn.disabled = true;
+      const grid = document.createElement('div');
+      grid.className = 'pair-grid';
+
+      const answers = {};
+      q.cards.forEach((choice, idx) => {
+        const card = document.createElement('div');
+        card.className = 'audio-card';
+        card.innerHTML = `<div>🔊 Card ${idx + 1}</div><div class="tag">${q.syllable}</div>`;
+        card.onclick = () => playAudio(choice.audio);
+
+        const tones = document.createElement('div');
+        tones.className = 'tone-choices';
+        ['1','2','3','4'].forEach(tone => {
+          const chip = document.createElement('div');
+          chip.className = 'chip';
+          chip.textContent = q.options.tone_symbols[tone];
+          chip.onclick = () => {
+            if (questionEnded) return;
+            answers[idx] = tone;
+            [...tones.children].forEach(c => c.classList.remove('selected'));
+            chip.classList.add('selected');
+          };
+          tones.appendChild(chip);
+        });
+        if (q.options?.include_same_tone) {
+          const chip = document.createElement('div');
+          chip.className = 'chip';
+          chip.textContent = 'Same tone';
+          chip.onclick = () => {
+            answers[idx] = 'same';
+            [...tones.children].forEach(c => c.classList.remove('selected'));
+            chip.classList.add('selected');
+          };
+          tones.appendChild(chip);
+        }
+        card.appendChild(tones);
+        grid.appendChild(card);
+      });
+
+      const submit = document.createElement('button');
+      submit.className = 'option-btn';
+      submit.textContent = 'Check';
+      submit.onclick = () => {
+        if (questionEnded) return;
+        attempts += 1;
+        let correct = true;
+        q.cards.forEach((choice, idx) => {
+          const expected = choice.tone;
+          const got = answers[idx];
+          if (got === undefined) correct = false;
+          if (got === 'same' && q.options?.include_same_tone && choice.tone === q.cards[0].tone) return;
+          if (got !== expected) correct = false;
+        });
+        if (correct) {
+          endQuestion(true);
+        } else {
+          showResult(false);
+          if (attempts >= MAX_ATTEMPTS) endQuestion(false, 'Attempt limit (5) reached.');
+        }
+        updateAttemptsTimer();
+      };
+
+      const yieldBtn = document.createElement('button');
+      yieldBtn.className = 'option-btn';
+      yieldBtn.textContent = 'Yield';
+      yieldBtn.onclick = () => {
+        if (questionEnded) return;
+        showAnswerCard(q);
+        endQuestion(false, 'Yielded and revealed answer.');
+      };
+
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'option-btn';
+      nextBtn.textContent = 'Next';
+      nextBtn.disabled = true;
+      nextBtn.onclick = () => pickNext();
+      nextBtnRef = nextBtn;
+
+      const actions = document.createElement('div');
+      actions.className = 'action-row';
+      actions.append(submit, yieldBtn, nextBtn);
+
+      promptBody.append(limitNote(), grid, actions);
+    }
+
+    // Mode switching
+    document.querySelectorAll('#modeSelect button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#modeSelect button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        mode = btn.dataset.mode;
+        pickNext();
+      });
+    });
+
+    // ---------- Scheduling / priority ----------
+    function lastSeen(qid) {
+      const items = history.filter(h => h.id === qid);
+      if (!items.length) return null;
+      return items.reduce((a,b)=> a.timestamp > b.timestamp ? a : b);
+    }
+
+    function statsFor(qid) {
+      const items = history.filter(h => h.id === qid);
+      if (!items.length) return null;
+      const avgTime = items.reduce((s,h)=> s + (h.time_taken_ms||0),0)/items.length;
+      const last = items.reduce((a,b)=> a.timestamp > b.timestamp ? a : b);
+      return {
+        count: items.length,
+        avgTimeMs: avgTime,
+        lastTimeMs: last.time_taken_ms || 0,
+        lastAttempts: last.attempts_to_correct || 0
+      };
+    }
+
+    function buildPinyinTable(syllables, onSelect) {
+      const initialOrder = ["","b","p","m","f","d","t","n","l","g","k","h","j","q","x","z","c","s","zh","ch","sh","r","y","w"];
+      const finalOrder = ["a","ai","an","ang","ao","e","ei","en","eng","er","i","ia","ian","iang","iao","ie","in","ing","iong","iu","o","ong","ou","u","ua","uai","uan","uang","ui","un","uo","ü","üe","üan","ün"];
+      const syllSet = new Set(syllables.map(s => s.replace("ü","v")));
+
+      const table = document.createElement('table');
+      table.className = 'pinyin';
+      const thead = document.createElement('thead');
+      const trh = document.createElement('tr');
+      trh.appendChild(document.createElement('th')); // corner
+      initialOrder.forEach(init => {
+        const th = document.createElement('th');
+        th.textContent = init || 'Ø';
+        trh.appendChild(th);
+      });
+      thead.appendChild(trh);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+      finalOrder.forEach(finRaw => {
+        const fin = finRaw.replace("ü","v");
+        const tr = document.createElement('tr');
+        const th = document.createElement('th');
+        th.textContent = finRaw;
+        tr.appendChild(th);
+        initialOrder.forEach(init => {
+          const td = document.createElement('td');
+          const candidate = (init + fin).replace("v","ü");
+          if (syllSet.has((init + fin))) {
+            const btn = document.createElement('button');
+            btn.textContent = candidate;
+            btn.onclick = () => onSelect(candidate, btn);
+            td.appendChild(btn);
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      return table;
+    }
+
+    function computePriority(q) {
+      const now = Date.now();
+      const items = history.filter(h => h.id === q.id);
+      const last = lastSeen(q.id);
+      const incorrect = items.filter(h => !h.correct).length;
+      const attemptsSum = items.reduce((s,h)=> s + (h.attempts_to_correct||1), 0);
+      const avgTime = items.length ? items.reduce((s,h)=> s + (h.time_taken_ms||0),0)/items.length : 0;
+
+      const tricky = q.score && q.score >= 90 ? 0.3 : 0;
+      if (!last) return 5 + tricky;
+
+      const hours = (now - last.timestamp)/3600000;
+      const decay = Math.exp(hours * Math.log(0.5) / 18); // half-life 18h
+      const missFactor = 1 + incorrect*1.2 + Math.max(0, attemptsSum - incorrect)*0.1;
+      const speedPenalty = Math.min(1.5, (avgTime/4000));
+      return (1 + tricky + speedPenalty) * missFactor * (1 - decay);
+    }
+
+    function updateAttemptsTimer() {
+      attemptsEl.textContent = `Attempts: ${attempts}/${MAX_ATTEMPTS}`;
+      if (timerHandle) cancelAnimationFrame(timerHandle);
+      function tick(now) {
+        if (questionEnded) return;
+        const ms = now - startedAt;
+        timerEl.textContent = `Time: ${(ms/1000).toFixed(1)}s / ${(MAX_TIME_MS/1000).toFixed(0)}s`;
+        if (ms >= MAX_TIME_MS) {
+          endQuestion(false, 'Time limit (100s) reached.');
+          return;
+        }
+        timerHandle = requestAnimationFrame(tick);
+      }
+      timerHandle = requestAnimationFrame(tick);
+    }
+
+    function showStats(qid) {
+      const s = statsFor(qid);
+      if (!s) {
+        statsEl.textContent = 'First time seeing this question.';
+      } else {
+        statsEl.textContent = `Seen ${s.count}× • Avg ${(s.avgTimeMs/1000).toFixed(2)}s • Last ${(s.lastTimeMs/1000).toFixed(2)}s • Last attempts ${s.lastAttempts}`;
+      }
+    }
+
+    function limitNote() {
+      const div = document.createElement('div');
+      div.className = 'small';
+      div.textContent = 'Limits: 5 attempts or 100 seconds. Click Next to load another question.';
+      return div;
+    }
+
+    function getToneSymbol(q, tone) {
+      return q.options?.tone_symbols?.[tone] || tone;
+    }
+
+    function showAnswerCard(q) {
+      const card = document.createElement('div');
+      card.className = 'answer-card';
+      const left = document.createElement('div');
+      left.innerHTML = `<div>Answer: <strong>${q.answer?.syllable || q.syllable || '—'}</strong> • Tone ${getToneSymbol(q, q.answer?.tone || q.cards?.[0]?.tone)}</div>`;
+      const play = document.createElement('button');
+      play.className = 'option-btn';
+      play.textContent = 'Play answer audio';
+      play.onclick = () => {
+        const src = q.audio || q.answer?.audio || (q.cards && q.cards[0]?.audio) || (q.pairs && q.pairs[0]?.audio) || '';
+        if (src) playAudio(src);
+      };
+      card.append(left, play);
+      resultEl.innerHTML = '';
+      resultEl.appendChild(card);
+    }
+
+    function launchConfetti() {
+      const layer = document.getElementById('confettiLayer');
+      if (!layer) return;
+      const colors = ['#22d3ee', '#34d399', '#f472b6', '#fbbf24', '#a78bfa'];
+      const pieces = 40;
+      for (let i = 0; i < pieces; i++) {
+        const span = document.createElement('div');
+        span.className = 'confetti-piece';
+        span.style.left = `${Math.random() * 100}%`;
+        span.style.background = colors[Math.floor(Math.random()*colors.length)];
+        span.style.animationDelay = `${Math.random()*0.2}s`;
+        span.style.transform = `translateY(-10vh) rotate(${Math.random()*180}deg)`;
+        layer.appendChild(span);
+        setTimeout(() => span.remove(), 1400);
+      }
+    }
+
+    function showResult(correct) {
+      resultEl.innerHTML = '';
+      if (correct === null) return;
+      const div = document.createElement('div');
+      div.className = 'option-btn ' + (correct ? 'correct' : 'wrong');
+      div.textContent = correct ? 'Correct' : 'Incorrect';
+      resultEl.appendChild(div);
+    }
+
+    loadBank().catch(err => {
+      promptTitle.textContent = 'Load error';
+      promptBody.textContent = err.message;
+      console.error(err);
+    });
+  </script>
+</body>
+</html>

@@ -9,8 +9,5 @@ __pycache__/
 *.jsonl
 *.txt
 
-# Ignore non-Python assets
-*.html
-
 # Allow this file
 !.gitignore
