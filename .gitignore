@@ -1,0 +1,16 @@
+# Ignore tone-perfect datasets
+/tone_perfect/
+/tone_perfect-2/
+
+# Ignore data exports and generated banks
+/Qbank/
+__pycache__/
+*.json
+*.jsonl
+*.txt
+
+# Ignore non-Python assets
+*.html
+
+# Allow this file
+!.gitignore
